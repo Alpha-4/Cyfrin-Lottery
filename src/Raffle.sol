@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: SEE License in License
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
