@@ -1,25 +1,47 @@
+// Layout of Contract:
+// version
+// imports
+// errors
+// interfaces, libraries, contracts
+// Type declarations
+// State variables
+// Events
+// Modifiers
+// Functions
+
+// Layout of Functions:
+// constructor
+// receive function (if exists)
+// fallback function (if exists)
+// external
+// public
+// internal
+// private
+// view & pure functions
+
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.19;
 
-import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
-import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
-import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 
 /**
-    @title A Sample Raffle contract
-    @author Arun
-    @notice This is just a sample contract for learning
+ * @title A sample Raffle Contract
+ * @author Patrick Collins
+ * @notice This contract is for creating a sample raffle contract
+ * @dev This implements the Chainlink VRF Version 2
  */
-contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
-    /*Errors here */
-    error Raffle__SendMoreToEnterRaffle();
+contract Raffle is VRFConsumerBaseV2Plus, AutomationCompatibleInterface {
+    /* Errors */
     error Raffle__UpkeepNotNeeded(
         uint256 currentBalance,
         uint256 numPlayers,
         uint256 raffleState
     );
     error Raffle__TransferFailed();
+    error Raffle__SendMoreToEnterRaffle();
     error Raffle__RaffleNotOpen();
 
     /* Type declarations */
@@ -28,11 +50,7 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
         CALCULATING
     }
 
-    /*Events here */
-    event RaffleJoined(address indexed player);
-    event RequestedRaffleWinner(uint256 indexed requestId);
-    event WinnerPicked(address indexed player);
-
+    /* State variables */
     // Chainlink VRF Variables
     uint256 private immutable i_subscriptionId;
     bytes32 private immutable i_gasLane;
@@ -40,14 +58,20 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
-    uint256 private immutable i_entranceFee;
+    // Lottery Variables
     uint256 private immutable i_interval;
+    uint256 private immutable i_entranceFee;
     uint256 private s_lastTimeStamp;
-    address payable[] private s_players;
     address private s_recentWinner;
     address payable[] private s_players;
     RaffleState private s_raffleState;
 
+    /* Events */
+    event RequestedRaffleWinner(uint256 indexed requestId);
+    event RaffleEnter(address indexed player);
+    event WinnerPicked(address indexed player);
+
+    /* Functions */
     constructor(
         uint256 subscriptionId,
         bytes32 gasLane, // keyHash
@@ -73,7 +97,6 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
         // require(msg.value >= i_entranceFee, "Not enough value sent");
         // require(s_raffleState == RaffleState.OPEN, "Raffle is not open");
         if (msg.value < i_entranceFee) {
-            //most gas efficient way
             revert Raffle__SendMoreToEnterRaffle();
         }
         if (s_raffleState != RaffleState.OPEN) {
